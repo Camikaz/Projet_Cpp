@@ -10,13 +10,13 @@ class Envir {
  public :
   // =========================== Static attributes =====================
   
-  static double maxTime_;
+  static int maxTime_;
   static int W_;
   static int H_;
   static double D_;
   // =========================== Constructors ==========================
   Envir();
-  Envir(double T, double Ai);
+  Envir(int T, double Ai);
   
   //=========================== Destructor =============================
   ~Envir();
@@ -27,19 +27,21 @@ class Envir {
   //=========================== Operators ==============================
 
   //=========================== Public Methods =========================
-
+  void Run(int n);
+  
 protected :
   //=========================== Protected Methods ======================
   
   void Diffuse();
   int** MultiDie();
-  void Competition(int** &dead_pos);
+  void Competition(int** dead_pos);
   void MultiLive();
+  void MultiClean();
   
   //=========================== Attributes =============================
   Cellule*** cells_; // 2D table containing pointers
-  double time_;
-  double T_;
+  int time_;
+  int T_;
   
 };
 

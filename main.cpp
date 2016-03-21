@@ -6,6 +6,7 @@
 using std::cout;
 
 int main() {
-  cout<<"Hello world ! \n";
+  Envir A(500,5);
+  A.Run(5);
   return 0;
 }

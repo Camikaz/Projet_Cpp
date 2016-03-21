@@ -7,7 +7,7 @@
 using namespace std;
 
 //================= Definition of static attributes ====================
-double Envir::maxTime_ = 10000;
+int Envir::maxTime_ = 10000;
 int Envir::W_ = 32;
 int Envir::H_ = 32;
 double Envir::D_ = 0.1;
@@ -29,7 +29,7 @@ Envir::Envir() {
 }
 
 // Rq: possibilité de modifier la repartition aleatoire des genomes pour avoir une egalité parfaite
-Envir::Envir(double T, double Ai) {
+Envir::Envir(int T, double Ai) {
   Cellule::setAi(Ai);
   
   T_ = T;
@@ -59,6 +59,21 @@ Envir::~Envir() {
 
 //=========================== Public Methods ===========================
 
+void Envir::Run(int n){
+  int Tour = 0;
+  
+  while(Tour < n){
+    while(time_%T_ != 0){
+      Diffuse();
+      Competition(MultiDie());
+      MultiLive();
+      time_++;
+    }
+    MultiClean();
+    Tour++;
+  }
+  
+}
 //=========================== Protected Methods ========================
 void Envir::Diffuse(){
   
@@ -174,7 +189,7 @@ int** Envir::MultiDie(){
   return dead_pos_r;
 }
 
-void Envir::Competition(int** &dead_pos){
+void Envir::Competition(int** dead_pos){
   int iter = 0;
   
   // the coordinates of a current dead_cell
@@ -222,4 +237,14 @@ void Envir::MultiLive(){
     }
   }
 }
+
+void Envir::MultiClean(){
+  for(int k = 0; k< H_; k++){
+    for(int j =0; j< W_; j++){
+      cells_[k][j]->Clean();
+    }
+  }
+}
+
+
 //=========================== Functions ================================

@@ -116,7 +116,6 @@ void Cellule::BirthFrom(Cellule* C){
   cell_genome genome_m = C->genome_;
   
   //alteration of the mother cell (it becomes à baby cell)
-  C->state_ = NEW;
   
   C->A_ = A_m*0.5;
   C->B_ = B_m*0.5;
@@ -135,7 +134,6 @@ void Cellule::BirthFrom(Cellule* C){
   
   
   //creation of the new cell
-  state_ = NEW;
   
   //new genome
   alea = rand()/(1.0*RAND_MAX);

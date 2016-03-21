@@ -1,14 +1,23 @@
 
 #ifndef Envir_H__
 #define Envir_H__
-
+#include <cstdio>
+#include <cstdlib>
 
 #include "Cellule.h"
 
 class Envir {
  public :
+  // =========================== Static attributes =====================
+  
+  static double maxTime_;
+  static int W_;
+  static int H_;
+  static double D_;
   // =========================== Constructors ==========================
   Envir();
+  Envir(double T, double Ai);
+  
   //=========================== Destructor =============================
   ~Envir();
   // =========================== Getters ===============================
@@ -18,16 +27,19 @@ class Envir {
   //=========================== Operators ==============================
 
   //=========================== Public Methods =========================
-  inline int H() const;
-  inline int W() const;
 
 protected :
   //=========================== Protected Methods ======================
   
+  void Diffuse();
+  int** MultiDie();
+  void Competition(int** &dead_pos);
+  void MultiLive();
+  
   //=========================== Attributes =============================
-  Cellule* cells_;
-  int W_;
-  int H_;
+  Cellule*** cells_; // 2D table containing pointers
+  double time_;
+  double T_;
   
 };
 
@@ -35,13 +47,7 @@ protected :
 
 
 //===========================Getters' definitions=======================
-inline int Envir::W() const{
-  return W_;
-}
 
-inline int Envir::H() const{
-  return H_;
-}
 //===========================Setters' definitions=======================
 
 //===========================Operators' definitions=====================

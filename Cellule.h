@@ -1,7 +1,8 @@
 
 #ifndef Cellule_H__
 #define Cellule_H__
-
+#include <cstdio>
+#include <cstdlib>
 //this class represent a cell, AND the case that is under it
 
 enum cell_state{DEAD, NEW, ADULT};
@@ -20,12 +21,15 @@ class Cellule {
   static double Rbb_;
   static double Rbc_;
   
+  static double Ai_;
+  
   // =========================== Static methods =====================
-  static void Parameters(double Pmut, double Pdeath, double Wmin, double Raa, double Rab, double Rbb, double Rbc);
+  static void Parameters(double Pmut, double Pdeath, double Wmin, double Raa, double Rab, double Rbb, double Rbc, double Ai);
+  static void setAi(double Ai);
   
   // =========================== Constructors ==========================
   Cellule();
-  Cellule(cell_genome G, double Ai);
+  Cellule(cell_genome G);
   
   //=========================== Destructor =============================
   ~Cellule();
@@ -42,7 +46,7 @@ class Cellule {
   inline double Bout() const;
   inline double Cout() const;
   
-  inline double fitness() const;
+  double fitness() const;
   
   //=========================== Setters ================================
   inline void SetCase(double Aout, double Bout, double Cout);
@@ -52,9 +56,9 @@ class Cellule {
   //=========================== Public Methods =========================
 
   void Live();
-  void BirthFrom(Cellule& C);
-  void Die();
-  void Clean(double Ai);
+  void BirthFrom(Cellule* C);
+  short Die();
+  void Clean();
 
 protected :
   //=========================== Protected Methods ======================
@@ -110,16 +114,6 @@ inline double Cellule::Cout() const{
   return Cout_;
 }
 
-inline double Cellule::fitness() const{
-  if(genome_ == GA){
-    return B_;
-  }
-  
-  if(genome_ == GB){
-    return C_;
-  }
-  
-}
 
 //===========================Setters' definitions=======================
 

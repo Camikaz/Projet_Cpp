@@ -1,10 +1,6 @@
 
 //=========================== Includes =================================
 #include "Envir.h"
-#include <cstdio>
-#include <cstdlib>
-
-using namespace std;
 
 //================= Definition of static attributes ====================
 int Envir::maxTime_ = 10000;
@@ -61,19 +57,179 @@ Envir::~Envir() {
 
 void Envir::Run(int n){
   int Tour = 0;
+  int** dead_pos = new int*[W_*H_]; 
+  int** dead_posRET; 
+  
+  Save("Bact");
+  
+  for( int k = 0; k < W_*H_ ; k++){
+    
+    dead_pos[k] = new int[2];
+    dead_pos[k][0] = -1;
+    dead_pos[k][1] = -1;
+
+  }
+
   
   while(Tour < n){
-    while(time_%T_ != 0){
+    
+    while(time_%T_ != T_-1){
+      
       Diffuse();
-      Competition(MultiDie());
+            
+      dead_posRET = MultiDie();
+    
+      Competition(dead_pos);
+      
+      for( int k = 0; k < W_*H_ ; k++){
+        dead_pos[k][0] = dead_posRET[k][0] ;
+        dead_pos[k][1] = dead_posRET[k][1] ;
+      }
+      
+      for(int k = 0; k < W_*H_ ; k++){
+        delete[] dead_posRET[k];
+      }
+      delete[] dead_posRET;
+      
       MultiLive();
       time_++;
+      
+      Save("Bact");
     }
+    
     MultiClean();
-    Tour++;
+    time_++; 
+    Tour++;      
+  }
+  
+    //deletion of the tables dead_pos and dead_posRET
+  for(int k = 0; k < W_*H_ ; k++){
+    delete[] dead_pos[k];
+  }
+  delete[] dead_pos;
+  
+}
+
+
+void Envir::Save(string name) const{
+  
+  ostringstream  oss;
+  string Fname = "init";
+  
+  oss.str("");
+  oss.clear();
+  oss << name << time_ << ".ppm";
+  Fname = oss.str();
+  
+  ofstream f;
+	f.open(Fname, std::ios:: out | std::ios::trunc | std::ios::binary);
+  f << "P6\n" << 4*W_ << " "<< H_ << "\n" << 255 << "\n";
+  
+  char a = 100;
+  char b = 100;
+  char c = 0;
+  
+  double ratio = 255/Cellule::Ai_;
+  
+  for(int k = 0; k < W_ ; k++){
+    for(int j = 0; j < H_ ; j++){
+      if(cells_[k][j]->state() == DEAD){
+        a = 0;
+        b = 0;
+      }
+      else if(cells_[k][j]-> genome() == GA){
+        a = 200;
+        b = 70;
+      }
+      else{
+        a = 70;
+        b = 200;
+      }
+      f.write(&a , sizeof(char));
+      f.write(&a , sizeof(char));
+      f.write(&b , sizeof(char));
+    }
+    
+    // Show the map of Aout;
+    for(int j = 0; j < H_ ; j++){
+      a = ((char) (cells_[k][j]-> Aout() * ratio) )%255;
+      f.write(&a , sizeof(char));
+      f.write(&c , sizeof(char));
+      f.write(&c , sizeof(char));
+    }
+    
+    // Show the map of Bout;
+    for(int j = 0; j < H_ ; j++){
+      a = ((char) (cells_[k][j]-> Bout() * ratio) )%255;
+      f.write(&c , sizeof(char));
+      f.write(&a , sizeof(char));
+      f.write(&c , sizeof(char));
+    }
+    
+    // Show the map of Cout;
+    for(int j = 0; j < H_ ; j++){
+      a = ((char) (cells_[k][j]-> Cout() * ratio) )%255;
+      f.write(&c , sizeof(char));
+      f.write(&c , sizeof(char));
+      f.write(&a , sizeof(char));
+    }
+    
   }
   
 }
+
+//~ void Envir::Save(string name) const{
+  //~ 
+  //~ ostringstream  oss;
+  //~ string Fname = "init";
+  //~ 
+  //~ oss.str("");
+  //~ oss.clear();
+  //~ oss << name << time_ << ".ppm";
+  //~ Fname = oss.str();
+  //~ 
+  //~ ofstream f;
+	//~ f.open(Fname, std::ios:: out | std::ios::trunc | std::ios::binary);
+  //~ f << "P6\n" << 2*W_ << " "<< H_ << "\n" << 255 << "\n";
+  //~ 
+  //~ char a = 100;
+  //~ char b = 100;
+  //~ char c = 100;
+  //~ 
+  //~ for(int k = 0; k < W_ ; k++){
+    //~ for(int j = 0; j < H_ ; j++){
+      //~ if(cells_[k][j]->state() == DEAD){
+        //~ a = 0;
+        //~ b = 0;
+      //~ }
+      //~ else if(cells_[k][j]-> genome() == GA){
+        //~ a = 200;
+        //~ b = 70;
+      //~ }
+      //~ else{
+        //~ a = 70;
+        //~ b = 200;
+      //~ }
+      //~ f.write(&a , sizeof(char));
+      //~ f.write(&a , sizeof(char));
+      //~ f.write(&b , sizeof(char));
+    //~ }
+    //~ 
+    //~ // Show the map of Aout;
+    //~ for(int j = 0; j < H_ ; j++){
+      //~ a = ((char) cells_[k][j]-> Aout()*10)%255;
+      //~ b = ((char) cells_[k][j]-> Bout()*10)%255;
+      //~ c = ((char) cells_[k][j]-> Cout()*10)%255;
+      //~ f.write(&a , sizeof(char));
+      //~ f.write(&b , sizeof(char));
+      //~ f.write(&c , sizeof(char));
+    //~ }
+    //~ 
+    //~ 
+  //~ }
+  //~ 
+//~ }
+
 //=========================== Protected Methods ========================
 void Envir::Diffuse(){
   
@@ -88,9 +244,9 @@ void Envir::Diffuse(){
     C_cp[k] = new double[W_];
     
     for(int j = 0; j< W_; j++){
-      A_cp[k][j] = cells_[k][j]->A();
-      B_cp[k][j] = cells_[k][j]->B();
-      C_cp[k][j] = cells_[k][j]->C();
+      A_cp[k][j] = cells_[k][j]->Aout();
+      B_cp[k][j] = cells_[k][j]->Bout();
+      C_cp[k][j] = cells_[k][j]->Cout();
     }
   }
   
@@ -101,17 +257,22 @@ void Envir::Diffuse(){
   for(int k = 0 ; k < H_ ; k++){
     for(int j = 0 ; j< W_ ; j++){
       
-      A_diff = cells_[k][j]->A();
-      B_diff = cells_[k][j]->B();
-      C_diff = cells_[k][j]->C();
+      A_diff = A_cp[k][j];
+      B_diff = B_cp[k][j];
+      C_diff = C_cp[k][j];
       
       for(int kl = -1; kl <= 1 ; kl++){
         for(int jl = -1; jl <= 1; jl++){
-          A_diff += cells_[(k+kl)%H_][(j+jl)%W_]->A();
-          B_diff += cells_[(k+kl)%H_][(j+jl)%W_]->B();
-          C_diff += cells_[(k+kl)%H_][(j+jl)%W_]->C();
+          A_diff += D_* A_cp[(k+kl+H_)%H_][(j+jl+W_)%W_];
+          B_diff += D_* B_cp[(k+kl+H_)%H_][(j+jl+W_)%W_];
+          C_diff += D_* C_cp[(k+kl+H_)%H_][(j+jl+W_)%W_];
         }
       }
+      
+      A_diff = A_diff - 9*D_ * A_cp[k][j];
+      B_diff = B_diff - 9*D_ * B_cp[k][j];
+      C_diff = C_diff - 9*D_ * C_cp[k][j];
+
       cells_[k][j]->SetCase(A_diff, B_diff, C_diff);
     }
   }
@@ -122,6 +283,7 @@ void Envir::Diffuse(){
       delete B_cp[k];
       delete C_cp[k];
     }
+    
   delete[] A_cp;
   delete[] B_cp;
   delete[] C_cp;
@@ -175,7 +337,8 @@ int** Envir::MultiDie(){
     
     iter2 ++;
     
-    dead_pos[alea] = dead_pos[iter];      
+    dead_pos[alea][0] = dead_pos[iter][0];      
+    dead_pos[alea][1] = dead_pos[iter][1];      
     iter --;
     
   }
@@ -201,6 +364,10 @@ void Envir::Competition(int** dead_pos){
   int j_selected = -1;
   double BestW = -1;
   
+  if(dead_pos == nullptr){
+    return;
+  }
+  
   // for each dead cell
   while (dead_pos[iter][0] != -1){
     k = dead_pos[iter][0];
@@ -209,24 +376,20 @@ void Envir::Competition(int** dead_pos){
     // finding the cell with the best fitness
     for(int kl = -1; kl <= 1 ; kl++){
       for(int jl = -1; jl <= 1; jl++){
-        if( cells_[(k+kl)%H_][(j+jl)%W_]-> fitness() > BestW){
-          k_selected = (k+kl)%H_;
-          j_selected = (j+jl)%H_;
+        if( cells_[(k+kl + H_)%H_][(j+jl + W_)%W_]-> fitness() > BestW){
+          k_selected = (k+kl + H_)%H_;
+          j_selected = (j+jl + W_)%H_;
         }
       }
     }
     
     // division of the selected cell
-    cells_[k][j]-> BirthFrom( cells_[k_selected][j_selected] );
+    if(BestW != 0){
+      cells_[k][j]-> BirthFrom( cells_[k_selected][j_selected] );
+    }
     
     iter++;
   }
-  
-  //deletion of the table dead_pos
-  for(int k = 0; k < W_*H_ ; k++){
-    delete[] dead_pos[k];
-  }
-  delete[] dead_pos;
 }
 
 

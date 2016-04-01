@@ -3,9 +3,12 @@
 #define Cellule_H__
 #include <cstdio>
 #include <cstdlib>
+#include <iostream>
+
+using std::cout;
 //this class represent a cell, AND the case that is under it
 
-enum cell_state{DEAD, NEW, ADULT};
+enum cell_state{DEAD, ADULT, NEW};
 enum cell_genome{GA,GB};
 
 class Cellule {
@@ -29,7 +32,6 @@ class Cellule {
   
   // =========================== Constructors ==========================
   Cellule();
-  Cellule(cell_genome G);
   
   //=========================== Destructor =============================
   ~Cellule();

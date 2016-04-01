@@ -38,7 +38,7 @@ void Cellule::setAi(double Ai){
 
 //=========================== Constructors =============================
 Cellule::Cellule() {
-  state_ = DEAD;
+  state_ = ADULT;
 
   Aout_ = Ai_;
   Bout_ = 0;
@@ -60,20 +60,6 @@ Cellule::Cellule() {
 }
 
 
-Cellule::Cellule(cell_genome G){
-  state_ = NEW;
-  genome_ = G;
-  
-  A_ = 0;
-  B_ = 0;
-  C_ = 0;
-  
-  
-  Aout_ = Ai_;
-  Bout_ = 0;
-  Cout_ = 0;
-}
-
 //=========================== Destructor ===============================
 Cellule::~Cellule() {
 
@@ -83,6 +69,10 @@ Cellule::~Cellule() {
 
 //you can call it for adult, new or dead cell
 void Cellule::Live(){
+  if(state_ == NEW){
+    state_ = ADULT;
+  }
+  
   if(state_ == ADULT){
     if(genome_ == GA){
       //resolution des equa diff sur 1, avec Euler explicite et un pas de 0.1
@@ -98,18 +88,18 @@ void Cellule::Live(){
         C_ = C_ + 0.1*B_*Rbc_;
         B_ = B_ + 0.1*(Bout_*Rbb_ - B_*Rbc_);
         Bout_ = Bout_ -0.1*Bout_*Rbb_;
+        Bout_ = Bout_ -0.1*Bout_*Rbb_;
       }//end Euler
     }//end GB
   }//end ADULT
-  else if(state_ == NEW){
-    state_ = ADULT;
-  }
 }
 
 //Create a cell from the mother cell "C" AND alterate "C"
 void Cellule::BirthFrom(Cellule* C){
-  
+  state_ = NEW;
+  C->state_ = NEW;
   //keeping in memory the mother cell information
+  
   double A_m = C->A_;
   double B_m = C->B_;
   double C_m = C->C_;
@@ -174,20 +164,23 @@ short Cellule::Die(){
   return 0;
 }
 
-double Cellule::fitness() const{
-  if(genome_ == GA){
+double Cellule::fitness() const{ 
+  if(state_ == DEAD || state_ == NEW){
+    return 0;
+  }
+  
+  if(genome() == GA){
     if(B_ >= Wmin_){
       return B_;
     }
     return 0;
   }
   
-  else{
-    if(C_ >= Wmin_){
+  else if(C_ >= Wmin_){
       return C_;
-    }
-    return 0;
   }
+  
+  return 0;
 }
 
 void Cellule::Clean(){

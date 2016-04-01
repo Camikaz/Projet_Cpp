@@ -1,8 +1,25 @@
 
 #ifndef Envir_H__
 #define Envir_H__
+
 #include <cstdio>
 #include <cstdlib>
+#include <fstream>
+#include <string>
+#include <iostream>
+
+#include <sstream>
+
+
+
+using std::stringstream;
+using std::string;
+using std::to_string;
+using std::ifstream;
+using std::ofstream;
+using std::cout;
+using std::ostringstream;
+
 
 #include "Cellule.h"
 
@@ -28,6 +45,7 @@ class Envir {
 
   //=========================== Public Methods =========================
   void Run(int n);
+  void Save(string name) const;
   
 protected :
   //=========================== Protected Methods ======================

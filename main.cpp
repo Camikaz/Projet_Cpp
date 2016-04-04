@@ -6,8 +6,9 @@
 using std::cout;
 
 int main() {
+
   srand(time(NULL));
-  Envir A(200,30);
-  A.Run(5);
+  Envir A(1400,20);
+  A.Run(1);
   return 0;
 }

@@ -8,7 +8,7 @@
 using std::cout;
 //this class represent a cell, AND the case that is under it
 
-enum cell_state{DEAD, ADULT, NEW};
+enum cell_state{DEAD, ADULT, NEW, YOUNG_DEAD};
 enum cell_genome{GA,GB};
 
 class Cellule {

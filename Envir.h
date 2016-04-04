@@ -9,6 +9,7 @@
 #include <iostream>
 
 #include <sstream>
+#include <vector>
 
 
 
@@ -19,6 +20,7 @@ using std::ifstream;
 using std::ofstream;
 using std::cout;
 using std::ostringstream;
+using std::vector;
 
 
 #include "Cellule.h"
@@ -51,8 +53,8 @@ protected :
   //=========================== Protected Methods ======================
   
   void Diffuse();
-  int** MultiDie();
-  void Competition(int** dead_pos);
+  void MultiDie();
+  void Competition();
   void MultiLive();
   void MultiClean();
   

@@ -21,7 +21,6 @@ Envir::Envir() {
       cells_[k][j] = new Cellule();
     }
   }
-  
 }
 
 // Rq: possibilité de modifier la repartition aleatoire des genomes pour avoir une egalité parfaite
@@ -39,7 +38,6 @@ Envir::Envir(int T, double Ai) {
       cells_[k][j] = new Cellule();
     }
   }
-  
 }
 
 //=========================== Destructor ===============================
@@ -57,57 +55,30 @@ Envir::~Envir() {
 
 void Envir::Run(int n){
   int Tour = 0;
-  int** dead_pos = new int*[W_*H_]; 
-  int** dead_posRET; 
-  
   Save("Bact");
-  
-  for( int k = 0; k < W_*H_ ; k++){
-    
-    dead_pos[k] = new int[2];
-    dead_pos[k][0] = -1;
-    dead_pos[k][1] = -1;
-
-  }
-
-  
   while(Tour < n){
+
     
     while(time_%T_ != T_-1){
       
       Diffuse();
             
-      dead_posRET = MultiDie();
-    
-      Competition(dead_pos);
-      
-      for( int k = 0; k < W_*H_ ; k++){
-        dead_pos[k][0] = dead_posRET[k][0] ;
-        dead_pos[k][1] = dead_posRET[k][1] ;
-      }
-      
-      for(int k = 0; k < W_*H_ ; k++){
-        delete[] dead_posRET[k];
-      }
-      delete[] dead_posRET;
-      
       MultiLive();
+      
+      MultiDie();
+    
+      Competition();
+      
       time_++;
       
       Save("Bact");
-    }
+    } // end of a turn
     
     MultiClean();
     time_++; 
     Tour++;      
-  }
-  
-    //deletion of the tables dead_pos and dead_posRET
-  for(int k = 0; k < W_*H_ ; k++){
-    delete[] dead_pos[k];
-  }
-  delete[] dead_pos;
-  
+    Save("Bact");
+  } //end while Tour < n
 }
 
 
@@ -129,27 +100,47 @@ void Envir::Save(string name) const{
   char b = 100;
   char c = 0;
   
-  double ratio = 255/Cellule::Ai_;
+  double ratio = 255/(Cellule::Ai_*2);
   
   for(int k = 0; k < W_ ; k++){
+    c = 0;
     for(int j = 0; j < H_ ; j++){
       if(cells_[k][j]->state() == DEAD){
         a = 0;
         b = 0;
+        c = 0;
       }
+      
+      else if(cells_[k][j]->state() == YOUNG_DEAD){
+        a = 100;
+        b = 100;
+        c = 100;
+      }
+      
       else if(cells_[k][j]-> genome() == GA){
-        a = 200;
+        a = 255;
         b = 70;
+        c = 0;
       }
+      
       else{
         a = 70;
-        b = 200;
+        b = 255;
+        c = 0;
       }
+      
+      if(cells_[k][j]->state() == NEW){
+        a = a*2;
+        b = b*2;
+        c = 150;
+      }
+      
       f.write(&a , sizeof(char));
       f.write(&a , sizeof(char));
       f.write(&b , sizeof(char));
     }
     
+    c = 0;
     // Show the map of Aout;
     for(int j = 0; j < H_ ; j++){
       a = ((char) (cells_[k][j]-> Aout() * ratio) )%255;
@@ -168,7 +159,7 @@ void Envir::Save(string name) const{
     
     // Show the map of Cout;
     for(int j = 0; j < H_ ; j++){
-      a = ((char) (cells_[k][j]-> Cout() * ratio) )%255;
+      a = ((char) (cells_[k][j]-> Cout() * ratio*1.5) )%255;
       f.write(&c , sizeof(char));
       f.write(&c , sizeof(char));
       f.write(&a , sizeof(char));
@@ -215,7 +206,7 @@ void Envir::Save(string name) const{
       //~ f.write(&b , sizeof(char));
     //~ }
     //~ 
-    //~ // Show the map of Aout;
+    //~ // Show the map of Aout Bout and Cout;
     //~ for(int j = 0; j < H_ ; j++){
       //~ a = ((char) cells_[k][j]-> Aout()*10)%255;
       //~ b = ((char) cells_[k][j]-> Bout()*10)%255;
@@ -229,6 +220,8 @@ void Envir::Save(string name) const{
   //~ }
   //~ 
 //~ }
+
+
 
 //=========================== Protected Methods ========================
 void Envir::Diffuse(){
@@ -290,105 +283,116 @@ void Envir::Diffuse(){
   
 }
 
-//return a table of pointers to the dead cells (randomly organised)
-int** Envir::MultiDie(){
-  
-  //initialisation of the table of the position of the dead cells
-  int** dead_pos = new int*[W_*H_]; 
-  int** dead_pos_r = new int*[W_*H_]; 
-  
-  for( int k = 0; k < W_*H_ ; k++){
-    
-    dead_pos[k] = new int[2];
-    dead_pos[k][0] = -1;
-    dead_pos[k][1] = -1;
-    
-    dead_pos_r[k] = new int[2];
-    dead_pos_r[k][0] = -1;
-    dead_pos_r[k][1] = -1;
 
+void Envir::MultiDie(){
+  for(int k = 0; k < H_; k++){
+    for(int j = 0; j < W_; j++){
+      cells_[k][j] -> Die();
+    }
   }
-  // end init
+}
+
+void Envir::Competition(){
   
-  int iter = 0;
+  // the coordinate of the best living cell living next to the current dead cell
+  double BestW = -1;
   
-  // kill the unlucky cells and write their pos in the table
-  for(int k =0; k < H_; k++){
-    for(int j = 0; j< W_; j++){
-      if( cells_[k][j]->Die() ){
-        dead_pos[iter][0] = k;
-        dead_pos[iter][1] = j;
-        iter ++;
+  //these vectors aren't randomized
+  vector<int> dead_cells_X0;
+  vector<int> dead_cells_Y0;
+  
+  //finding the dead cells positions
+  for(int ki = 0 ; ki < H_ ; ki++){
+    for(int ji = 0 ; ji < W_ ; ji++){
+      if(cells_[ki][ji] -> state() == DEAD){
+        dead_cells_X0.push_back(ki);
+        dead_cells_Y0.push_back(ji);
       }
     }
   }
   
-  iter --;
-  int alea = 0;
-  int iter2 = 0;
+  //these vectors are randomized
+  vector<int> dead_cells_X;
+  vector<int> dead_cells_Y;
   
-  // make the randomized table dead_pos_r
-  while(iter != 0){
-    
-    alea = (int) iter * rand()/(1.0*RAND_MAX);
-    
-    dead_pos_r[iter2][0] = dead_pos[alea][0];
-    dead_pos_r[iter2][1] = dead_pos[alea][1];
-    
-    iter2 ++;
-    
-    dead_pos[alea][0] = dead_pos[iter][0];      
-    dead_pos[alea][1] = dead_pos[iter][1];      
-    iter --;
-    
-  }
+  int ret_size = dead_cells_X0.size() -1;
   
-  // delete the unnecessary table dead_pos
-  for(int k = 0; k < W_*H_ ; k++){
-    delete[] dead_pos[k];
-  }
-  delete[] dead_pos;
-  
-  return dead_pos_r;
-}
-
-void Envir::Competition(int** dead_pos){
-  int iter = 0;
-  
-  // the coordinates of a current dead_cell
-  int k = 0;
-  int j = 0;
-  
-  // the coordinate of the best living cell living next to the current dead cell
-  int k_selected = -1;
-  int j_selected = -1;
-  double BestW = -1;
-  
-  if(dead_pos == nullptr){
+  if(ret_size < 0){
     return;
   }
+  else if(ret_size == 0){
+    dead_cells_X.push_back( dead_cells_X0[ret_size] );
+    dead_cells_Y.push_back( dead_cells_Y0[ret_size] );
+  }
   
-  // for each dead cell
-  while (dead_pos[iter][0] != -1){
-    k = dead_pos[iter][0];
-    j = dead_pos[iter][1];
+  int alea;
+  
+  
+  //randomization
+  while(ret_size > 0){
+    alea = rand()%ret_size;
+    
+    dead_cells_X.push_back( dead_cells_X0[alea] );
+    dead_cells_Y.push_back( dead_cells_Y0[alea] );
+    
+    dead_cells_X0[alea] = dead_cells_X0[ret_size];
+    dead_cells_Y0[alea] = dead_cells_Y0[ret_size];
+    
+    ret_size --;
+  }// end randomization
+  
+  // These vectors will contain the positions of the cells with the best fitness
+  vector<int> posX;
+  vector<int> posY;
+  
+  // for each dead cell of position (k,j), we choose which cell will divide (if it's occurs)
+  int k;
+  int j;
+  
+  for(unsigned int i = 0; i< dead_cells_X.size(); i++){
+    
+    k = dead_cells_X[i];
+    j = dead_cells_Y[i];
+
+    
+    BestW = -1;
+    posX.clear();
+    posY.clear();
     
     // finding the cell with the best fitness
     for(int kl = -1; kl <= 1 ; kl++){
       for(int jl = -1; jl <= 1; jl++){
+        
+        
         if( cells_[(k+kl + H_)%H_][(j+jl + W_)%W_]-> fitness() > BestW){
-          k_selected = (k+kl + H_)%H_;
-          j_selected = (j+jl + W_)%H_;
+          posX.clear();
+          posY.clear();
+          posX.push_back((k+kl + H_)%H_) ;
+          posY.push_back((j+jl + W_)%W_) ;
+          
+          BestW = cells_[(k+kl + H_)%H_][(j+jl + W_)%W_]-> fitness();
         }
-      }
-    }
+        
+        if( cells_[(k+kl + H_)%H_][(j+jl + W_)%W_]-> fitness() == BestW){
+          posX.push_back((k+kl + H_)%H_) ;
+          posY.push_back((j+jl + W_)%W_) ;
+        }
+        
+        
+          
+      } //end k
+    } // end j
+    
     
     // division of the selected cell
-    if(BestW != 0){
+    if(BestW > 0){
+      int choice = rand()%posX.size();
+      // the chosen bactery;
+      int k_selected = posX[choice];
+      int j_selected = posY[choice];
+      
       cells_[k][j]-> BirthFrom( cells_[k_selected][j_selected] );
     }
-    
-    iter++;
   }
 }
 

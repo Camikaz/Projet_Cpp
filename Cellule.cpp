@@ -71,8 +71,13 @@ Cellule::~Cellule() {
 void Cellule::Live(){
   if(state_ == NEW){
     state_ = ADULT;
+    // then the cell will also metabolize
   }
   
+  if(state_ == YOUNG_DEAD){
+    state_ = DEAD;
+  }
+  // the cell metabolize
   if(state_ == ADULT){
     if(genome_ == GA){
       //resolution des equa diff sur 1, avec Euler explicite et un pas de 0.1
@@ -83,7 +88,8 @@ void Cellule::Live(){
       }//end Euler
     }//end GA
     
-    if(genome_ == GB){
+    //if genome_ == GB
+    else{
       for(int k = 0; k < 10; k++){
         C_ = C_ + 0.1*B_*Rbc_;
         B_ = B_ + 0.1*(Bout_*Rbb_ - B_*Rbc_);
@@ -95,62 +101,56 @@ void Cellule::Live(){
 }
 
 //Create a cell from the mother cell "C" AND alterate "C"
-void Cellule::BirthFrom(Cellule* C){
+void Cellule::BirthFrom(Cellule* Cm){
   state_ = NEW;
-  C->state_ = NEW;
-  //keeping in memory the mother cell information
+  Cm->state_ = NEW;
   
-  double A_m = C->A_;
-  double B_m = C->B_;
-  double C_m = C->C_;
-  cell_genome genome_m = C->genome_;
+  A_ = Cm-> A_ * 0.5;
+  B_ = Cm-> B_ * 0.5;
+  C_ = Cm-> C_ * 0.5;
   
-  //alteration of the mother cell (it becomes à baby cell)
-  
-  C->A_ = A_m*0.5;
-  C->B_ = B_m*0.5;
-  C->C_ = C_m*0.5;
-  
+  Cm-> A_ = A_;
+  Cm-> B_ = B_;
+  Cm-> C_ = C_;
+
+  // mutation for the mother cell
+  cell_genome genome_m = Cm->genome_;
   double alea = rand()/(1.0*RAND_MAX);
   
   if(alea < Pmut_){
     if(genome_m == GA){
-      C->genome_ = GB;
+      Cm->genome_ = GB;
       }
     else{
-      C->genome_ = GA;
+      Cm->genome_ = GA;
       }
   }
   
-  
-  //creation of the new cell
-  
-  //new genome
+  //
   alea = rand()/(1.0*RAND_MAX);
   
-  if(alea >= Pmut_){
-    genome_ = genome_m;
-  }
-  else{
+  if(alea < Pmut_){
     if(genome_m == GA){
       genome_ = GB;
     }
     else{
       genome_ = GA;
-      }
+    }
   }
-  
-  //new composition
-  A_ = A_m*0.5;
-  B_ = B_m*0.5;
-  C_ = C_m*0.5;
+  else{
+    genome_ = genome_m;
+  }
 }
 
 short Cellule::Die(){
+  if(state_ == DEAD || state_ == YOUNG_DEAD){
+    return 1;
+  }
+  
   double alea = rand()/(1.0*RAND_MAX);
   
   if(alea < Pdeath_){
-    state_ = DEAD;
+    state_ = YOUNG_DEAD;
     
     Aout_ += A_;
     Bout_ += B_;
@@ -165,7 +165,7 @@ short Cellule::Die(){
 }
 
 double Cellule::fitness() const{ 
-  if(state_ == DEAD || state_ == NEW){
+  if(state_ == DEAD || state_ == NEW || state_ == YOUNG_DEAD){
     return 0;
   }
   
@@ -173,11 +173,10 @@ double Cellule::fitness() const{
     if(B_ >= Wmin_){
       return B_;
     }
-    return 0;
   }
   
   else if(C_ >= Wmin_){
-      return C_;
+    return C_;
   }
   
   return 0;
